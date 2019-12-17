@@ -1,11 +1,36 @@
 # ObjectOrientedDesign/Essence.kt
 from enum import Enum
+from abc import ABC, abstractmethod
+from typing import Dict, Tuple
 
 
-class Item:
-    def __init__(self, symbol: Char):
+class Urge(Enum):
+    North = 1
+    South = 2
+    East = 3
+    West = 4
+
+
+class Robot:
+    def __init__(self, room: Room):
+        self.room = room
+
+    def turn(self, urge: Urge):
+        # Get a reference to the Room you've
+        # been urged to go to, and see what
+        # happens when we enter the Room.
+        # Point robot to returned Room:
+        self.room = self.room.doors.open(urge).enter(self)
+
+    def __str__(self):
+        return f"Robot {self.room.doors}"
+
+
+class Item(ABC):
+    def __init__(self, symbol: str):
         self.symbol = symbol
 
+    @abstractmethod
     def interact(self, robot: Robot, room: Room) -> Room:
         pass
 
@@ -35,14 +60,14 @@ class Food(Item):
 
     def interact(self, robot: Robot, room: Room):
         print("Eat food")
-        room.occupant = Empty
+        room.occupant = Empty()
         return room  # Move to new room
 
 
 class Teleport(Item):
     "Jump to the room with the same target"
 
-    def __init__(self, target: Char):
+    def __init__(self, target: str):
         super().__init__(target)
 
     def interact(self, robot: Robot, room: Room):
@@ -50,7 +75,7 @@ class Teleport(Item):
 
 
 class Empty(Item):
-    "Room is there, but nothing in it"
+    "Room is there, but nothing is in it"
 
     def __init__(self):
         super().__init__(' ')
@@ -79,24 +104,6 @@ class EndGame(Item):
         return room
 
 
-Enum('Urge', 'North South East West')
-
-
-class Robot:
-    def __init__(self, room: Room):
-        self.room = room
-
-    def turn(self, urge: Urge):
-        # Get a reference to the Room you've
-        # been urged to go to, and see what
-        # happens when we enter the Room.
-        # Point robot to returned Room:
-        self.room = self.room.doors.open(urge).enter(this)
-
-    def __str__(self):
-        return f"Robot {self.room.doors}"
-
-
 class Doors:
     def __init__(self):
         self.north = Room(Edge())
@@ -104,9 +111,9 @@ class Doors:
         self.east = Room(Edge())
         self.west = Room(Edge())
 
-    def connect(self, row: Int, col: Int,
-                grid: Dict[Tuple[Int, Int], Room]):
-        def link(to_row: Int, to_col: Int):
+    def connect(self, row: int, col: int,
+                grid: Dict[Tuple[int, int], Room]):
+        def link(to_row: int, to_col: int):
             return grid.get((to_row, to_col), Room(Edge()))
 
         self.north = link(row - 1, col)
@@ -121,7 +128,7 @@ class Doors:
             Urge.South: self.south,
             Urge.East: self.east,
             Urge.West: self.west
-        }.get(urge)
+        }.get(urge, Room(Edge()))
 
     def __str__(self):
         return f"[N({self.north.occupant}), " + \
@@ -143,9 +150,9 @@ class Room:
 
 
 class RoomBuilder:
-    def __init__(self, maze: String):
-        self.grid: Dict[Tuple[Int, Int], Room] = {}
-        self.robot = Robot(edge)  # Nowhere
+    def __init__(self, maze: str):
+        self.grid: Dict[Tuple[int, int], Room] = {}
+        self.robot = Robot(Room(Edge()))  # Nowhere
         # Stage 1: Create grid
         lines = maze.split("\n")
         # lines.withIndex().forEach {(r, line) -> line.withIndex().forEach {(c, char) -> grid[Pair(r, c)] = create_room(char)
@@ -154,10 +161,10 @@ class RoomBuilder:
         # Stage 3: Locate the robot
         # robot.room = grid.values.find  {it.occupant == Mech}  ?: robot.room
 
-    def room(self, row: Int, col: Int):
-        f"({row}, {col}) " + self.grid.get((row, col), edge)
+    def room(self, row: int, col: int):
+        f"({row}, {col}) " + str(self.grid.get((row, col), Room(Edge())))
 
-    def create_room(self, c: Char) -> Room:
+    def create_room(self, c: str) -> Room:
         # Item.values().forEach
         # {item ->
         # if (item.symbol == c):
@@ -168,18 +175,18 @@ class RoomBuilder:
         return f"""grid.map {"${it.key} ${it.value}"}.joinToString("\n")"""
 
 
-stringMaze = """
+string_maze = """
 a ...#... c
 R ...#...
 ###########
 a ....... b
 ###########
 ! c ..... b
-""".trim()
+""".strip()
 
 
 def main():
-    builder = RoomBuilder(stringMaze).build()
+    builder = RoomBuilder(string_maze).build()
     print(builder.room(0, 0))
     print(builder.room(1, 6))
     print(builder.room(5, 0))
