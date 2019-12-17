@@ -1,6 +1,5 @@
 # ObjectOrientedDesign/Essence.kt
 from enum import Enum
-from abc import ABC, abstractmethod
 from typing import Dict, Tuple
 
 
@@ -12,10 +11,10 @@ class Urge(Enum):
 
 
 class Robot:
-    def __init__(self, room: Room):
+    def __init__(self, room):
         self.room = room
 
-    def turn(self, urge: Urge):
+    def move(self, urge: Urge):
         # Get a reference to the Room you've
         # been urged to go to, and see what
         # happens when we enter the Room.
@@ -26,19 +25,10 @@ class Robot:
         return f"Robot {self.room.doors}"
 
 
-class Item(ABC):
-    def __init__(self, symbol: str):
-        self.symbol = symbol
+class Item:
+    symbol = ''
 
-    @staticmethod
-    def factory(symbol: str) -> Item:
-        for item in Item.__subclasses__():
-            if symbol == item.symbol:
-                return item()
-        return Teleport(symbol)
-
-    @abstractmethod
-    def interact(self, robot: Robot, room: Room) -> Room:
+    def interact(self, robot, room):
         pass
 
     def __str__(self):
@@ -48,84 +38,88 @@ class Item(ABC):
 class Mech(Item):
     symbol = 'R'
 
-    def __init__(self):
-        super().__init__(symbol)
-
-    def interact(self, robot: Robot, room: Room):
+    def interact(self, robot: Robot, room):
         return robot.room  # Stay in original room
 
 
 class Wall(Item):
     symbol = '#'
 
-    def __init__(self):
-        super().__init__(symbol)
-
-    def interact(self, robot: Robot, room: Room):
+    def interact(self, robot: Robot, room):
         return robot.room  # Stay in original room
 
 
 class Food(Item):
     symbol = '.'
 
-    def __init__(self):
-        super().__init__(symbol)
-
-    def interact(self, robot: Robot, room: Room):
+    def interact(self, robot: Robot, room):
         print("Eat food")
         room.occupant = Empty()
         return room  # Move to new room
 
 
 class Teleport(Item):
-    "Jump to the room with the same target"
+    """Jump to the room with the same target"""
 
     def __init__(self, target: str):
-        super().__init__(target)
+        self.target = target
 
-    def interact(self, robot: Robot, room: Room):
+    def interact(self, robot: Robot, room):
         pass
+
+    def __str__(self):
+        return self.target
 
 
 class Empty(Item):
-    "Room is there, but nothing is in it"
+    """Room is there, but nothing is in it"""
     symbol = ' '
 
-    def __init__(self):
-        super().__init__(symbol)
-
-    def interact(self, robot: Robot, room: Room):
+    def interact(self, robot: Robot, room):
         return room  # Move to new room
 
 
 class Edge(Item):
-    "The unknown void outside the maze"
+    """The unknown void outside the maze"""
     symbol = '_'
 
-    def __init__(self):
-        super().__init__(symbol)
-
-    def interact(self, robot: Robot, room: Room):
+    def interact(self, robot: Robot, room):
         return robot.room  # Stay in original room
 
 
 class EndGame(Item):
-    "The game is over"
+    """The game is over"""
     symbol = '!'
 
-    def __init__(self):
-        super().__init__(symbol)
-
-    def interact(self, robot: Robot, room: Room):
+    def interact(self, robot: Robot, room):
         return room
+
+
+def item_factory(symbol: str):
+    for item in Item.__subclasses__():
+        if symbol == item.symbol:
+            return item()
+    return Teleport(symbol)
+
+
+class Room:
+    def __init__(self, occupant: Item = Empty()):
+        self.occupant = occupant
+        self.doors = Doors()
+
+    def enter(self, robot: Robot):
+        return self.occupant.interact(robot, self)
+
+    def __str__(self):
+        return f"Room({self.occupant}) {self.doors}"
 
 
 class Doors:
     def __init__(self):
-        self.north = Room(Edge())
-        self.south = Room(Edge())
-        self.east = Room(Edge())
-        self.west = Room(Edge())
+        self.north = None
+        self.south = None
+        self.east = None
+        self.west = None
 
     def connect(self, row: int, col: int,
                 grid: Dict[Tuple[int, int], Room]):
@@ -153,18 +147,6 @@ class Doors:
                f"W({self.west.occupant})]"
 
 
-class Room:
-    def __init__(self, occupant: Item = Empty()):
-        self.occupant = occupant
-        self.doors = Doors()
-
-    def enter(self, robot: Robot) -> Room:
-        return self.occupant.interact(robot, self)
-
-    def __str__(self):
-        return f"Room({self.occupant}) {self.doors}"
-
-
 class RoomBuilder:
     def __init__(self, maze: str):
         self.grid: Dict[Tuple[int, int], Room] = {}
@@ -173,9 +155,11 @@ class RoomBuilder:
         lines = maze.split("\n")
         for row, line in enumerate(lines):
             for col, char in enumerate(line):
-                self.grid[(row, col)] = Room(Item.factory(char))
+                self.grid[(row, col)] = Room(item_factory(char))
         # Stage 2: Connect the rooms
         # grid.forEach{(pair, r) -> r.doors.connect(pair.first, pair.second, grid)
+        for (row, col), room in self.grid.items():
+            room.doors.connect(row, col, self.grid)
         # Stage 3: Locate the robot
         # robot.room = grid.values.find  {it.occupant == Mech}  ?: robot.room
 
@@ -195,19 +179,26 @@ a ....... b
 ! c ..... b
 """.strip()
 
-
-def main():
-    builder = RoomBuilder(string_maze).build()
-    print(builder.room(0, 0))
-    print(builder.room(1, 6))
-    print(builder.room(5, 0))
-    robot = builder.robot
-    print(robot)
-    robot.turn(Urge.East)
-    robot.turn(Urge.East)
-    robot.turn(Urge.South)
-    print(robot)
-
+if __name__ == '__main__':
+    grid: Dict[Tuple[int, int], Room] = {}
+    lines = string_maze.split("\n")
+    for row, line in enumerate(lines):
+        # print(row, line)
+        for col, char in enumerate(line):
+            # print(col, char)
+            print(f"item_factory({char}): {item_factory(char)}")
+            # grid[(row, col)] = Room(Item.factory(char))
+    # Item.factory('#')
+    # builder = RoomBuilder(string_maze).build()
+    # print(builder.room(0, 0))
+    # print(builder.room(1, 6))
+    # print(builder.room(5, 0))
+    # robot = builder.robot
+    # print(robot)
+    # robot.move(Urge.East)
+    # robot.move(Urge.East)
+    # robot.move(Urge.South)
+    # print(robot)
 
 """
 Output:
