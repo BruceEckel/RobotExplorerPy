@@ -30,6 +30,13 @@ class Item(ABC):
     def __init__(self, symbol: str):
         self.symbol = symbol
 
+    @staticmethod
+    def factory(symbol: str) -> Item:
+        for item in Item.__subclasses__():
+            if symbol == item.symbol:
+                return item()
+        return Teleport(symbol)
+
     @abstractmethod
     def interact(self, robot: Robot, room: Room) -> Room:
         pass
@@ -162,9 +169,11 @@ class RoomBuilder:
     def __init__(self, maze: str):
         self.grid: Dict[Tuple[int, int], Room] = {}
         self.robot = Robot(Room(Edge()))  # Nowhere
-        # Stage 1: Create grid
+        # Stage 1: Create the grid
         lines = maze.split("\n")
-        # lines.withIndex().forEach {(r, line) -> line.withIndex().forEach {(c, char) -> grid[Pair(r, c)] = create_room(char)
+        for row, line in enumerate(lines):
+            for col, char in enumerate(line):
+                self.grid[(row, col)] = Room(Item.factory(char))
         # Stage 2: Connect the rooms
         # grid.forEach{(pair, r) -> r.doors.connect(pair.first, pair.second, grid)
         # Stage 3: Locate the robot
@@ -173,14 +182,8 @@ class RoomBuilder:
     def room(self, row: int, col: int):
         f"({row}, {col}) " + str(self.grid.get((row, col), Room(Edge())))
 
-    def create_room(self, c: str) -> Room:
-        for item in Item.__subclasses__():
-            if c == item.symbol:
-                return Room(item())
-        return Room(Teleport(c))
-
     def __str__(self):
-        return f"""grid.map {"${it.key} ${it.value}"}.joinToString("\n")"""
+        return f"""grid.map {"{it.key} {it.value}"}.joinToString("\n")"""
 
 
 string_maze = """
@@ -208,13 +211,10 @@ def main():
 
 """
 Output:
-(0, 0)
-Room(T)[N(_), S(R), E(), W(_)]
-(1, 6)
-Room(.) [N(.), S(  # ), E(.), W(#)]
-    (5, 0)
-Room(!) [N(  # ), S(_), E( ), W(_)]
-    Robot[N(T), S(  # ), E( ), W(_)]
-        Eat food
-    Robot[N(.), S(  # ), E(.), W( )]
+(0, 0) Room(T)[N(_), S(R), E(), W(_)]
+(1, 6) Room(.) [N(.), S(  # ), E(.), W(#)]
+(5, 0) Room(!) [N(  # ), S(_), E( ), W(_)]
+Robot[N(T), S(  # ), E( ), W(_)]
+Eat food
+Robot[N(.), S(  # ), E(.), W( )]
 """
