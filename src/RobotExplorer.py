@@ -26,21 +26,25 @@ class Food(Item):
 
 
 class Teleport(Item):
-    def __init__(self):
-        super().__init__('T')
+    "Jump to the room with the same target"
+    def __init__(self, target: Char):
+        super().__init__(target)
 
 
 class Empty(Item):
+    "Room is there, but nothing in it"
     def __init__(self):
         super().__init__(' ')
 
 
 class Edge(Item):
+    "The unknown void outside the maze"
     def __init__(self):
         super().__init__('_')
 
 
 class EndGame(Item):
+    "The game is over"
     def __init__(self):
         super().__init__('!')
 
@@ -63,20 +67,17 @@ class Robot:
         return "Robot ${room.doors}"
 
 
-edge = Room(Edge)
-
-
 class Doors:
     def __init__(self):
-        self.north = edge
-        self.south = edge
-        self.east = edge
-        self.west = edge
+        self.north = Room(Edge)
+        self.south = Room(Edge)
+        self.east = Room(Edge)
+        self.west = Room(Edge)
 
     def connect(self, row: Int, col: Int,
-                grid: Map[Pair[Int, Int], Room ]):
+                grid: Dict[Tuple[Int, Int], Room]):
         def link(to_row: Int, to_col: Int):
-            return grid.getOrDefault((to_row, to_col), edge)
+            return grid.get((to_row, to_col), Room(Edge))
         self.north = link(row - 1, col)
         self.south = link(row + 1, col)
         self.east = link(row, col + 1)
@@ -92,85 +93,67 @@ class Doors:
         }.get(urge)
 
     def __str__(self):
-        return "[N(${north.occupant}), " + \
-               "S(${south.occupant}), " + \
-               "E(${east.occupant}), " + \
-               "W(${west.occupant})]"
+        return  "[N(${self.north.occupant}), " + \
+                "S(${self.south.occupant}), " + \
+                "E(${self.east.occupant}), " + \
+                "W(${self.west.occupant})]"
 
 
 class Room:
-    def __init__(self, occupant: Item = Empty):
+    def __init__(self, occupant: Item = Empty()):
         self.occupant = occupant
         self.doors = Doors()
 
     def enter(robot: Robot) -> Room:
-        when(occupant):
-        Empty -> return this  # Enter new room
-        # Stay in original room:
-        Wall, Edge, Mech -> return robot.room
-        Food -> {
+        "Is type-check coding SO bad?"
+        if isinstance(occupant, Empty):
+          return this  # Enter new room
+        if isinstance(occupant, Mech) or isinstance(occupant, Wall) or isinstance(occupant, Edge):
+            # Stay in original room:
+            return robot.room
+        if isinstance(self.occupant, Food):
             print("Eat food")
-        occupant = Empty
-        return this
-        }
-        Teleport -> {
-        print("Jump to target room")
-        return Room(Teleport)
-        }
-        EndGame -> {
-        print("End game")
-        return Room(EndGame)
+            self.occupant = Empty
+            return this
+        if isinstance(self.occupant, Teleport):
+            print("Jump to target room")
+            return Room(Teleport)
+        if isinstance(self.occupant, EndGame):
+            print("End game")
+            return Room(EndGame)
 
-
-def __str__(self):
-    return "Room($occupant) $doors"
+    def __str__(self):
+        return f"Room({occupant}) {doors}"
 
 
 class RoomBuilder:
     def __init__(self, maze: String):
-        self.grid = mutableMapOf < Pair < Int, Int >, Room > ()
+        self.grid: Dict[Tuple[Int, Int], Room] = {}
+        self.robot = Robot(edge)  # Nowhere
 
     def room(self, row: Int, col: Int):
-        "($row, $col) " + \
-        grid.getOrDefault(Pair(row, col), edge)
+        f"({row}, {col}) " + grid.get((row, col), edge)
+
+    def build(self) -> RoomBuilder:
+        # Stage 1: Create grid
+        lines = maze.split("\n")
+        # lines.withIndex().forEach {(r, line) -> line.withIndex().forEach {(c, char) -> grid[Pair(r, c)] = createRoom(char)
+        # Stage 2: Connect the rooms
+        # grid.forEach{(pair, r) -> r.doors.connect(pair.first, pair.second, grid)
+        # Stage 3: Locate the robot
+        # robot.room = grid.values.find  {it.occupant == Mech}  ?: robot.room
+        return self
+
+    def createRoom(self, c: Char) -> Room:
+        # Item.values().forEach
+        # {item ->
+        # if (item.symbol == c):
+        #     return Room(item)
+        return Room(Teleport)
 
 
-robot = Robot(edge)  # Nowhere
-
-
-def build(self) -> RoomBuilder:
-    # Stage 1: Create grid
-    lines = maze.split("\n")
-    lines.withIndex().forEach
-    {(r, line) ->
-    line.withIndex().forEach
-    {(c, char) ->
-    grid[Pair(r, c)] = createRoom(char)
-    # Stage 2: Connect the rooms
-    grid.forEach
-    {(pair, r) ->
-    r.doors.connect(pair.first, pair.second, grid)
-    # Stage 3: Locate the robot
-    robot.room = grid.values
-    .find
-
-
-{it.occupant == Mech}
-?: robot.room
-return self
-
-
-def createRoom(self, c: Char) -> Room:
-    Item.values().forEach
-    {item ->
-    if (item.symbol == c):
-        return Room(item)
-    return Room(Teleport)
-
-
-def __str__(self):
-    grid.map
-    {"${it.key} ${it.value}"}.joinToString("\n")
+    def __str__(self):
+        """grid.map {"${it.key} ${it.value}"}.joinToString("\n")"""
 
 
 stringMaze = """
