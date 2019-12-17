@@ -6,6 +6,9 @@ class Item:
     def __init__(self, symbol: Char):
         self.symbol = symbol
 
+    def interact(self, robot: Robot, room: Room) -> Room:
+        pass
+
     def __str__(self):
         return self.symbol
 
@@ -14,39 +17,66 @@ class Mech(Item):
     def __init__(self):
         super().__init__('R')
 
+    def interact(self, robot: Robot, room: Room):
+        return robot.room  # Stay in original room
+
 
 class Wall(Item):
     def __init__(self):
         super().__init__('#')
+
+    def interact(self, robot: Robot, room: Room):
+        return robot.room  # Stay in original room
 
 
 class Food(Item):
     def __init__(self):
         super().__init__('.')
 
+    def interact(self, robot: Robot, room: Room):
+        print("Eat food")
+        room.occupant = Empty
+        return room  # Move to new room
+
 
 class Teleport(Item):
     "Jump to the room with the same target"
+
     def __init__(self, target: Char):
         super().__init__(target)
+
+    def interact(self, robot: Robot, room: Room):
+        pass
 
 
 class Empty(Item):
     "Room is there, but nothing in it"
+
     def __init__(self):
         super().__init__(' ')
+
+    def interact(self, robot: Robot, room: Room):
+        return room  # Move to new room
 
 
 class Edge(Item):
     "The unknown void outside the maze"
+
     def __init__(self):
         super().__init__('_')
+
+    def interact(self, robot: Robot, room: Room):
+        return robot.room  # Stay in original room
 
 
 class EndGame(Item):
     "The game is over"
+
     def __init__(self):
         super().__init__('!')
+
+    def interact(self, robot: Robot, room: Room):
+        return room
 
 
 Enum('Urge', 'North South East West')
@@ -64,39 +94,40 @@ class Robot:
         self.room = self.room.doors.open(urge).enter(this)
 
     def __str__(self):
-        return "Robot ${room.doors}"
+        return f"Robot {self.room.doors}"
 
 
 class Doors:
     def __init__(self):
-        self.north = Room(Edge)
-        self.south = Room(Edge)
-        self.east = Room(Edge)
-        self.west = Room(Edge)
+        self.north = Room(Edge())
+        self.south = Room(Edge())
+        self.east = Room(Edge())
+        self.west = Room(Edge())
 
     def connect(self, row: Int, col: Int,
                 grid: Dict[Tuple[Int, Int], Room]):
         def link(to_row: Int, to_col: Int):
-            return grid.get((to_row, to_col), Room(Edge))
+            return grid.get((to_row, to_col), Room(Edge()))
+
         self.north = link(row - 1, col)
         self.south = link(row + 1, col)
         self.east = link(row, col + 1)
         self.west = link(row, col - 1)
 
-    def open(self, urge: Urge) -> Room :
+    def open(self, urge: Urge) -> Room:
         # Pattern Match:
         return {
-            Urge.North : north,
-            Urge.South : south,
-            Urge.East : east,
-            Urge.West : west
+            Urge.North: self.north,
+            Urge.South: self.south,
+            Urge.East: self.east,
+            Urge.West: self.west
         }.get(urge)
 
     def __str__(self):
-        return  "[N(${self.north.occupant}), " + \
-                "S(${self.south.occupant}), " + \
-                "E(${self.east.occupant}), " + \
-                "W(${self.west.occupant})]"
+        return f"[N({self.north.occupant}), " + \
+               f"S({self.south.occupant}), " + \
+               f"E({self.east.occupant}), " + \
+               f"W({self.west.occupant})]"
 
 
 class Room:
@@ -104,56 +135,37 @@ class Room:
         self.occupant = occupant
         self.doors = Doors()
 
-    def enter(robot: Robot) -> Room:
-        "Is type-check coding SO bad?"
-        if isinstance(occupant, Empty):
-          return this  # Enter new room
-        if isinstance(occupant, Mech) or isinstance(occupant, Wall) or isinstance(occupant, Edge):
-            # Stay in original room:
-            return robot.room
-        if isinstance(self.occupant, Food):
-            print("Eat food")
-            self.occupant = Empty
-            return this
-        if isinstance(self.occupant, Teleport):
-            print("Jump to target room")
-            return Room(Teleport)
-        if isinstance(self.occupant, EndGame):
-            print("End game")
-            return Room(EndGame)
+    def enter(self, robot: Robot) -> Room:
+        return self.occupant.interact(robot, self)
 
     def __str__(self):
-        return f"Room({occupant}) {doors}"
+        return f"Room({self.occupant}) {self.doors}"
 
 
 class RoomBuilder:
     def __init__(self, maze: String):
         self.grid: Dict[Tuple[Int, Int], Room] = {}
         self.robot = Robot(edge)  # Nowhere
-
-    def room(self, row: Int, col: Int):
-        f"({row}, {col}) " + grid.get((row, col), edge)
-
-    def build(self) -> RoomBuilder:
         # Stage 1: Create grid
         lines = maze.split("\n")
-        # lines.withIndex().forEach {(r, line) -> line.withIndex().forEach {(c, char) -> grid[Pair(r, c)] = createRoom(char)
+        # lines.withIndex().forEach {(r, line) -> line.withIndex().forEach {(c, char) -> grid[Pair(r, c)] = create_room(char)
         # Stage 2: Connect the rooms
         # grid.forEach{(pair, r) -> r.doors.connect(pair.first, pair.second, grid)
         # Stage 3: Locate the robot
         # robot.room = grid.values.find  {it.occupant == Mech}  ?: robot.room
-        return self
 
-    def createRoom(self, c: Char) -> Room:
+    def room(self, row: Int, col: Int):
+        f"({row}, {col}) " + self.grid.get((row, col), edge)
+
+    def create_room(self, c: Char) -> Room:
         # Item.values().forEach
         # {item ->
         # if (item.symbol == c):
         #     return Room(item)
-        return Room(Teleport)
-
+        return Room(Teleport(c))
 
     def __str__(self):
-        """grid.map {"${it.key} ${it.value}"}.joinToString("\n")"""
+        return f"""grid.map {"${it.key} ${it.value}"}.joinToString("\n")"""
 
 
 stringMaze = """
