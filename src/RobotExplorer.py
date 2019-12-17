@@ -39,24 +39,30 @@ class Item(ABC):
 
 
 class Mech(Item):
+    symbol = 'R'
+
     def __init__(self):
-        super().__init__('R')
+        super().__init__(symbol)
 
     def interact(self, robot: Robot, room: Room):
         return robot.room  # Stay in original room
 
 
 class Wall(Item):
+    symbol = '#'
+
     def __init__(self):
-        super().__init__('#')
+        super().__init__(symbol)
 
     def interact(self, robot: Robot, room: Room):
         return robot.room  # Stay in original room
 
 
 class Food(Item):
+    symbol = '.'
+
     def __init__(self):
-        super().__init__('.')
+        super().__init__(symbol)
 
     def interact(self, robot: Robot, room: Room):
         print("Eat food")
@@ -76,9 +82,10 @@ class Teleport(Item):
 
 class Empty(Item):
     "Room is there, but nothing is in it"
+    symbol = ' '
 
     def __init__(self):
-        super().__init__(' ')
+        super().__init__(symbol)
 
     def interact(self, robot: Robot, room: Room):
         return room  # Move to new room
@@ -86,9 +93,10 @@ class Empty(Item):
 
 class Edge(Item):
     "The unknown void outside the maze"
+    symbol = '_'
 
     def __init__(self):
-        super().__init__('_')
+        super().__init__(symbol)
 
     def interact(self, robot: Robot, room: Room):
         return robot.room  # Stay in original room
@@ -96,9 +104,10 @@ class Edge(Item):
 
 class EndGame(Item):
     "The game is over"
+    symbol = '!'
 
     def __init__(self):
-        super().__init__('!')
+        super().__init__(symbol)
 
     def interact(self, robot: Robot, room: Room):
         return room
@@ -165,10 +174,9 @@ class RoomBuilder:
         f"({row}, {col}) " + str(self.grid.get((row, col), Room(Edge())))
 
     def create_room(self, c: str) -> Room:
-        # Item.values().forEach
-        # {item ->
-        # if (item.symbol == c):
-        #     return Room(item)
+        for item in Item.__subclasses__():
+            if c == item.symbol:
+                return Room(item())
         return Room(Teleport(c))
 
     def __str__(self):
