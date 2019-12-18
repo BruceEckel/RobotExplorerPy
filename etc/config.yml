@@ -1,4 +1,0 @@
-## Runtime configuration for the pyapp application.
-##
-core:
-  logging: WARN

@@ -105,6 +105,7 @@ class Doors: pass
 
 
 class Room:
+    """Holds occupant, can be entered by Robot"""
     def __init__(self, occupant: Item = Empty()):
         self.occupant = occupant
         self.doors = Doors()
@@ -174,7 +175,8 @@ class RoomBuilder:
 
     def rooms(self) -> str:
         return "\n".join(
-            [self.room(r, c) for (r, c) in self.grid.keys()])
+            [self.room(row, col)
+             for (row, col) in self.grid.keys()])
 
     def __str__(self):
         result = ""
@@ -210,8 +212,7 @@ if __name__ == '__main__':
     robot.move(Urge.South)
     print(robot)
 
-"""
-Output:
+""" Output:
 (0, 0) Room(T)[N(_), S(R), E(), W(_)]
 (1, 6) Room(.) [N(.), S(  # ), E(.), W(#)]
 (5, 0) Room(!) [N(  # ), S(_), E( ), W(_)]
