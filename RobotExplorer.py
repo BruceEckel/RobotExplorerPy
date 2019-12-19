@@ -20,7 +20,7 @@ class Robot:
         # that Room. Point robot to the returned Room:
         self.room = self.room.doors.open(urge).enter(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Robot {self.room.doors}"
 
 
@@ -30,7 +30,7 @@ class Item:
     def interact(self, robot, room):
         pass
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.symbol
 
 
@@ -66,7 +66,7 @@ class Teleport(Item):
     def interact(self, robot: Robot, room):
         pass
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.target
 
 
@@ -145,7 +145,7 @@ class Doors:
             Urge.West: self.west
         }.get(urge, Room(Edge()))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"[N({self.north.occupant}), " + \
                f"S({self.south.occupant}), " + \
                f"E({self.east.occupant}), " + \
@@ -178,7 +178,7 @@ class RoomBuilder:
             [self.room(row, col)
              for (row, col) in self.grid.keys()])
 
-    def __str__(self):
+    def __str__(self) -> str:
         result = ""
         current_row = 0
         for (row, col), room in self.grid.items():
