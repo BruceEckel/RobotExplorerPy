@@ -62,9 +62,10 @@ class Teleport(Item):
 
     def __init__(self, target: str):
         self.target = target
+        self.targetRoom = None
 
     def interact(self, robot: Robot, room):
-        pass
+        return self.targetRoom
 
     def __str__(self) -> str:
         return self.target
@@ -127,7 +128,7 @@ class Doors:
         self.west = Doors.edge
 
     def connect(self, row: int, col: int,
-                grid: Dict[Tuple[int, int], Room]):
+                grid: Dict[Tuple[int, int], Room]) -> None:
         def link(to_row: int, to_col: int):
             return grid.get((to_row, to_col), Doors.edge)
 
@@ -156,14 +157,20 @@ class RoomBuilder:
     def __init__(self, maze: str):
         self.grid: Dict[Tuple[int, int], Room] = {}
         self.robot = Robot(Room(Edge()))  # Nowhere
+        self.teleports: List[Teleport] = []
         # Stage 1: Build the grid
         for row, line in enumerate(maze.split("\n")):
             for col, char in enumerate(line):
-                self.grid[(row, col)] = Room(item_factory(char))
+                room: Room = Room(item_factory(char))
+                self.grid[(row, col)] = room
+                if isinstance(room.occupant, Teleport):
+                    self.teleports.append(room)
         # Stage 2: Connect the rooms
         for (row, col), room in self.grid.items():
             room.doors.connect(row, col, self.grid)
-        # Stage 3: Locate the robot
+        # Stage 3: Connect the Teleport rooms
+        print(self.teleports)
+        # Stage 4: Locate the robot
         for room in self.grid.values():
             if isinstance(room.occupant, Mech):
                 self.robot.room = room
