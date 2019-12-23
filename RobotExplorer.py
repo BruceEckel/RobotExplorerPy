@@ -1,7 +1,6 @@
 # ObjectOrientedDesign/Essence.kt
 from enum import Enum
-from typing import Dict, Tuple
-
+from typing import List, Dict, Tuple
 
 class Urge(Enum):
     North = 1
@@ -62,13 +61,13 @@ class Teleport(Item):
 
     def __init__(self, target: str):
         self.target = target
-        self.targetRoom = None
+        self.target_room = None
 
     def interact(self, robot: Robot, room):
-        return self.targetRoom
+        return self.target_room
 
     def __str__(self) -> str:
-        return self.target
+        return f"{self.target}"
 
 
 class Empty(Item):
@@ -157,19 +156,25 @@ class RoomBuilder:
     def __init__(self, maze: str):
         self.grid: Dict[Tuple[int, int], Room] = {}
         self.robot = Robot(Room(Edge()))  # Nowhere
-        self.teleports: List[Teleport] = []
+        self.teleports: List[Room] = []
         # Stage 1: Build the grid
         for row, line in enumerate(maze.split("\n")):
             for col, char in enumerate(line):
                 room: Room = Room(item_factory(char))
                 self.grid[(row, col)] = room
+                # NOT type-check coding:
                 if isinstance(room.occupant, Teleport):
                     self.teleports.append(room)
         # Stage 2: Connect the rooms
         for (row, col), room in self.grid.items():
             room.doors.connect(row, col, self.grid)
         # Stage 3: Connect the Teleport rooms
-        print(self.teleports)
+        self.teleports.sort(key=lambda teleport: teleport.occupant.target)
+        it = iter(self.teleports)
+        for room1, room2 in zip(it, it):
+            room1.occupant.target_room = room2
+            room2.occupant.target_room = room1
+            print(f"{room1} : {room2}")
         # Stage 4: Locate the robot
         for room in self.grid.values():
             if isinstance(room.occupant, Mech):
@@ -207,17 +212,17 @@ a_......._b
 
 if __name__ == '__main__':
     builder = RoomBuilder(string_maze)
-    print(builder.rooms())
-    print(builder)
-    print(builder.room(0, 0))
-    print(builder.room(1, 6))
-    print(builder.room(5, 0))
-    robot = builder.robot
-    print(robot)
-    robot.move(Urge.East)
-    robot.move(Urge.East)
-    robot.move(Urge.South)
-    print(robot)
+    # print(builder.rooms())
+    # print(builder)
+    # print(builder.room(0, 0))
+    # print(builder.room(1, 6))
+    # print(builder.room(5, 0))
+    # robot = builder.robot
+    # print(robot)
+    # robot.move(Urge.East)
+    # robot.move(Urge.East)
+    # robot.move(Urge.South)
+    # print(robot)
 
 """ Output:
 (0, 0) Room(T)[N(_), S(R), E(), W(_)]
