@@ -2,25 +2,12 @@
 from enum import Enum
 from typing import List, Dict, Tuple
 
+
 class Urge(Enum):
     North = 1
     South = 2
     East = 3
     West = 4
-
-
-class Robot:
-    def __init__(self, room):
-        self.room = room
-
-    def move(self, urge: Urge):
-        # Get a reference to the Room you've been urged
-        # to go to, and see what happens when we enter
-        # that Room. Point robot to the returned Room:
-        self.room = self.room.doors.open(urge).enter(self)
-
-    def __str__(self) -> str:
-        return f"Robot {self.room.doors}"
 
 
 class Item:
@@ -33,11 +20,24 @@ class Item:
         return self.symbol
 
 
-class Mech(Item):
+class Robot(Item):
+    """Robot knows where it is in the maze, but
+    doesn't actually 'occupy' any room, it isn't an occupant.
+    So it doesn't have to manage what's in the room -- interact() does that.
+    When displaying the maze, the robot overlays its position."""
     symbol = 'R'
 
-    def interact(self, robot: Robot, room):
-        return robot.room  # Stay in original room
+    def __init__(self):
+        # Robot is a state machine:
+        self.room = None
+
+    def move(self, urge: Urge):
+        # self.room.occupant = Empty()  # Leave old room
+        # Get a reference to the Room you've been urged
+        # to go to, and see what happens when we enter
+        # that Room. Point robot to the returned Room:
+        self.room = self.room.doors.open(urge).enter(self)
+        # self.room.occupant = self  # Occupy new room
 
 
 class Wall(Item):
@@ -106,6 +106,7 @@ class Doors: pass
 
 class Room:
     """Holds occupant, can be entered by Robot"""
+
     def __init__(self, occupant: Item = Empty()):
         self.occupant = occupant
         self.doors = Doors()
@@ -155,16 +156,20 @@ class Doors:
 class RoomBuilder:
     def __init__(self, maze: str):
         self.grid: Dict[Tuple[int, int], Room] = {}
-        self.robot = Robot(Room(Edge()))  # Nowhere
         self.teleports: List[Room] = []
         # Stage 1: Build the grid
         for row, line in enumerate(maze.split("\n")):
             for col, char in enumerate(line):
-                room: Room = Room(item_factory(char))
-                self.grid[(row, col)] = room
-                # NOT type-check coding:
-                if isinstance(room.occupant, Teleport):
-                    self.teleports.append(room)
+                occupant: Item = item_factory(char)
+                if isinstance(occupant, Robot):
+                    room = Room(Empty())
+                    self.robot = occupant
+                    self.robot.room = room
+                    self.grid[(row, col)] = room
+                else:
+                    self.grid[(row, col)] = Room(occupant)
+                if isinstance(occupant, Teleport):
+                    self.teleports.append(self.grid[(row, col)])
         # Stage 2: Connect the rooms
         for (row, col), room in self.grid.items():
             room.doors.connect(row, col, self.grid)
@@ -174,12 +179,7 @@ class RoomBuilder:
         for room1, room2 in zip(it, it):
             room1.occupant.target_room = room2
             room2.occupant.target_room = room1
-            print(f"{room1} : {room2}")
-        # Stage 4: Locate the robot
-        for room in self.grid.values():
-            if isinstance(room.occupant, Mech):
-                self.robot.room = room
-                return
+            # print(f"{room1} : {room2}")
 
     def room(self, row: int, col: int) -> str:
         return f"({row}, {col}) " + \
@@ -197,7 +197,10 @@ class RoomBuilder:
             if row != current_row:
                 result += "\n"
                 current_row = row
-            result += f"{room.occupant}"
+            if room == self.robot.room:
+                result += f"{self.robot}"
+            else:
+                result += f"{room.occupant}"
         return result
 
 
@@ -213,15 +216,16 @@ a_......._b
 if __name__ == '__main__':
     builder = RoomBuilder(string_maze)
     # print(builder.rooms())
-    # print(builder)
+    print(builder)
     # print(builder.room(0, 0))
     # print(builder.room(1, 6))
     # print(builder.room(5, 0))
-    # robot = builder.robot
+    robot = builder.robot
     # print(robot)
-    # robot.move(Urge.East)
-    # robot.move(Urge.East)
-    # robot.move(Urge.South)
+    robot.move(Urge.East)
+    robot.move(Urge.East)
+    robot.move(Urge.South)
+    print(builder)
     # print(robot)
 
 """ Output:
