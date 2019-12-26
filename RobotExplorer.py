@@ -190,7 +190,7 @@ class RoomBuilder:
             [self.room(row, col)
              for (row, col) in self.grid.keys()])
 
-    def __str__(self) -> str:
+    def maze(self) -> str:
         result = ""
         current_row = 0
         for (row, col), room in self.grid.items():
@@ -216,7 +216,7 @@ a_......._b
 if __name__ == '__main__':
     builder = RoomBuilder(string_maze)
     # print(builder.rooms())
-    print(builder)
+    print(builder.maze())
     # print(builder.room(0, 0))
     # print(builder.room(1, 6))
     # print(builder.room(5, 0))
@@ -225,7 +225,7 @@ if __name__ == '__main__':
     robot.move(Urge.East)
     robot.move(Urge.East)
     robot.move(Urge.South)
-    print(builder)
+    print(builder.maze())
     # print(robot)
 
 """ Output:
