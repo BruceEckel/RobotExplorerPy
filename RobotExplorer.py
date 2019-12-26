@@ -7,6 +7,7 @@ import os
 
 CLEAR = "cls" if platform.system().lower() == "windows" else "clear"
 
+
 class Urge(Enum):
     North = 1
     South = 2
@@ -25,9 +26,6 @@ class Item:
 
 
 class Robot(Item):
-    """
-    If robot is never an occupant, does it need to be an Item?
-    """
     symbol = 'R'
 
     def __init__(self):
@@ -221,6 +219,7 @@ class GameBuilder:
         for urge_char in ''.join(solution.split()):
             self.step(match.get(urge_char))
 
+
 string_maze = """
 a_...#..._c
 R_...#...__
@@ -238,13 +237,7 @@ wwwwseeeen
 ww
 """
 
-
 if __name__ == '__main__':
     game = GameBuilder(string_maze)
     game.run(solution)
-    # game.step()
-    # game.step(Urge.East)
-    # game.step(Urge.East)
-    # game.step(Urge.South)
-
 
