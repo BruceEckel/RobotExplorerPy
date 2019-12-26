@@ -2,8 +2,10 @@
 from enum import Enum
 from typing import List, Dict, Tuple
 from time import sleep
-from clear_screen import clear_screen
+import platform
+import os
 
+CLEAR = "cls" if platform.system().lower() == "windows" else "clear"
 
 class Urge(Enum):
     North = 1
@@ -23,10 +25,9 @@ class Item:
 
 
 class Robot(Item):
-    """Robot knows where it is in the maze, but
-    doesn't actually 'occupy' any room, it isn't an occupant.
-    So it doesn't have to manage what's in the room -- interact() does that.
-    When displaying the maze, the robot overlays its position."""
+    """
+    If robot is never an occupant, does it need to be an Item?
+    """
     symbol = 'R'
 
     def __init__(self):
@@ -34,12 +35,10 @@ class Robot(Item):
         self.room = None
 
     def move(self, urge: Urge):
-        # self.room.occupant = Empty()  # Leave old room
         # Get a reference to the Room you've been urged
         # to go to, and see what happens when we enter
         # that Room. Point robot to the returned Room:
         self.room = self.room.doors.open(urge).enter(self)
-        # self.room.occupant = self  # Occupy new room
 
 
 class Wall(Item):
@@ -155,7 +154,7 @@ class Doors:
                f"W({self.west.occupant})]"
 
 
-class RoomBuilder:
+class GameBuilder:
     def __init__(self, maze: str):
         self.grid: Dict[Tuple[int, int], Room] = {}
         self.teleports: List[Room] = []
@@ -192,7 +191,7 @@ class RoomBuilder:
             [self.room(row, col)
              for (row, col) in self.grid.keys()])
 
-    def maze(self) -> str:
+    def show_maze(self) -> str:
         result = ""
         current_row = 0
         for (row, col), room in self.grid.items():
@@ -205,6 +204,22 @@ class RoomBuilder:
                 result += f"{room.occupant}"
         return result
 
+    def step(self, urge: Urge = None):
+        if urge:
+            self.robot.move(urge)
+        os.system(CLEAR)
+        print(self.show_maze())
+        sleep(0.3)
+
+    def run(self, solution: str):
+        match = {
+            "n": Urge.North,
+            "s": Urge.South,
+            "e": Urge.East,
+            "w": Urge.West
+        }
+        for urge_char in ''.join(solution.split()):
+            self.step(match.get(urge_char))
 
 string_maze = """
 a_...#..._c
@@ -215,32 +230,21 @@ a_......._b
 !_c_....._b
 """.strip()
 
+solution = """
+eeeenwwww
+eeeeeeeeee
+wwwwwwww
+wwwwseeeen
+ww
+"""
+
 
 if __name__ == '__main__':
-    builder = RoomBuilder(string_maze)
-    def show():
-        clear_screen()
-        print(builder.maze())
-        sleep(1)
-    # print(builder.room(0, 0))
-    # print(builder.room(1, 6))
-    # print(builder.room(5, 0))
-    robot = builder.robot
-    # print(robot)
-    show()
-    robot.move(Urge.East)
-    show()
-    robot.move(Urge.East)
-    show()
-    robot.move(Urge.South)
-    show()
-    # print(robot)
+    game = GameBuilder(string_maze)
+    game.run(solution)
+    # game.step()
+    # game.step(Urge.East)
+    # game.step(Urge.East)
+    # game.step(Urge.South)
 
-""" Output:
-(0, 0) Room(T)[N(_), S(R), E(), W(_)]
-(1, 6) Room(.) [N(.), S(  # ), E(.), W(#)]
-(5, 0) Room(!) [N(  # ), S(_), E( ), W(_)]
-Robot[N(T), S(  # ), E( ), W(_)]
-Eat food
-Robot[N(.), S(  # ), E(.), W( )]
-"""
+
