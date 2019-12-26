@@ -1,6 +1,8 @@
 # ObjectOrientedDesign/Essence.kt
 from enum import Enum
 from typing import List, Dict, Tuple
+from time import sleep
+from clear_screen import clear_screen
 
 
 class Urge(Enum):
@@ -213,19 +215,25 @@ a_......._b
 !_c_....._b
 """.strip()
 
+
 if __name__ == '__main__':
     builder = RoomBuilder(string_maze)
-    # print(builder.rooms())
-    print(builder.maze())
+    def show():
+        clear_screen()
+        print(builder.maze())
+        sleep(1)
     # print(builder.room(0, 0))
     # print(builder.room(1, 6))
     # print(builder.room(5, 0))
     robot = builder.robot
     # print(robot)
+    show()
     robot.move(Urge.East)
+    show()
     robot.move(Urge.East)
+    show()
     robot.move(Urge.South)
-    print(builder.maze())
+    show()
     # print(robot)
 
 """ Output:
