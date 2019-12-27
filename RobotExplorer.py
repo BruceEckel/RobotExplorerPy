@@ -16,6 +16,7 @@ class Urge(Enum):
 
 
 class Item:
+    """Things that can occupy a Room"""
     symbol = ''
 
     def interact(self, robot, room):
@@ -40,6 +41,7 @@ class Robot(Item):
 
 
 class Wall(Item):
+    """Robot can't pass through a wall"""
     symbol = '#'
 
     def interact(self, robot: Robot, room):
@@ -47,11 +49,11 @@ class Wall(Item):
 
 
 class Food(Item):
+    """Robot can eat food to gain energy"""
     symbol = '.'
 
     def interact(self, robot: Robot, room):
-        print("Eat food")
-        room.occupant = Empty()
+        room.occupant = Empty() # Food eaten
         return room  # Move to new room
 
 
@@ -78,7 +80,8 @@ class Empty(Item):
 
 
 class Edge(Item):
-    """The unknown void outside the maze"""
+    """The unknown void outside the maze.
+    Robot can't go into an Edge."""
     symbol = '/'
 
     def interact(self, robot: Robot, room):
@@ -86,14 +89,16 @@ class Edge(Item):
 
 
 class EndGame(Item):
-    """The game is over"""
+    """The game is over when Robot encounters this"""
     symbol = '!'
 
     def interact(self, robot: Robot, room):
+        print("Game over!")
         return room
 
 
 def item_factory(symbol: str):
+    """Create an Item from its symbol"""
     for item in Item.__subclasses__():
         if symbol == item.symbol:
             return item()
@@ -104,7 +109,8 @@ class Doors: pass
 
 
 class Room:
-    """Holds occupant, can be entered by Robot"""
+    """Holds occupant, can be entered by Robot,
+    has doors to other rooms."""
 
     def __init__(self, occupant: Item = Empty()):
         self.occupant = occupant
@@ -118,6 +124,7 @@ class Room:
 
 
 class Doors:
+    """How a Room connects to other Rooms"""
     edge = Room(Edge())
 
     def __init__(self):
@@ -153,7 +160,10 @@ class Doors:
 
 
 class GameBuilder:
+    """Create and manage the game"""
     def __init__(self, maze: str):
+        """Use the 'Builder' pattern to build the
+        object in multiple stages."""
         self.grid: Dict[Tuple[int, int], Room] = {}
         self.teleports: List[Room] = []
         # Stage 1: Build the grid
@@ -178,15 +188,14 @@ class GameBuilder:
         for room1, room2 in zip(it, it):
             room1.occupant.target_room = room2
             room2.occupant.target_room = room1
-            # print(f"{room1} : {room2}")
 
-    def room(self, row: int, col: int) -> str:
+    def show_room(self, row: int, col: int) -> str:
         return f"({row}, {col}) " + \
                f"{self.grid.get((row, col), Room(Edge()))}"
 
-    def rooms(self) -> str:
+    def __str__(self) -> str:
         return "\n".join(
-            [self.room(row, col)
+            [self.show_room(row, col)
              for (row, col) in self.grid.keys()])
 
     def show_maze(self) -> str:
@@ -203,6 +212,8 @@ class GameBuilder:
         return result
 
     def step(self, urge: Urge = None):
+        """If called without urge, just display
+        the current maze."""
         if urge:
             self.robot.move(urge)
         os.system(CLEAR)
@@ -233,11 +244,10 @@ solution = """
 eeeenwwww
 eeeeeeeeee
 wwwwwwww
-wwwwseeeen
+eeennnwwwwwsseeeeeen
 ww
 """
 
 if __name__ == '__main__':
     game = GameBuilder(string_maze)
     game.run(solution)
-
