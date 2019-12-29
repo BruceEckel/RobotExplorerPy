@@ -5,7 +5,7 @@ from time import sleep
 import platform
 import os
 
-CLEAR = "cls" if platform.system().lower() == "windows" else "clear"
+CLEAR = "cls" if "windows" in platform.system().lower() else "clear"
 
 
 class Urge(Enum):
@@ -134,9 +134,9 @@ class Doors:
         self.west = Doors.edge
 
     def connect(self, row: int, col: int,
-                grid: Dict[Tuple[int, int], Room]) -> None:
+                rooms: Dict[Tuple[int, int], Room]) -> None:
         def link(to_row: int, to_col: int):
-            return grid.get((to_row, to_col), Doors.edge)
+            return rooms.get((to_row, to_col), Doors.edge)
 
         self.north = link(row - 1, col)
         self.south = link(row + 1, col)
@@ -150,7 +150,7 @@ class Doors:
             Urge.South: self.south,
             Urge.East: self.east,
             Urge.West: self.west
-        }.get(urge, Room(Edge()))
+        }.get(urge, Doors.edge)
 
     def __str__(self) -> str:
         return f"[N({self.north.occupant}), " + \
@@ -164,9 +164,9 @@ class GameBuilder:
     def __init__(self, maze: str):
         """Use the 'Builder' pattern to build the
         object in multiple stages."""
-        self.grid: Dict[Tuple[int, int], Room] = {}
+        self.rooms: Dict[Tuple[int, int], Room] = {}
         self.teleports: List[Room] = []
-        # Stage 1: Build the grid
+        # Stage 1: Build the rooms
         for row, line in enumerate(maze.split("\n")):
             for col, char in enumerate(line):
                 occupant: Item = item_factory(char)
@@ -174,14 +174,14 @@ class GameBuilder:
                     room = Room(Empty())
                     self.robot = occupant
                     self.robot.room = room
-                    self.grid[(row, col)] = room
+                    self.rooms[(row, col)] = room
                 else:
-                    self.grid[(row, col)] = Room(occupant)
+                    self.rooms[(row, col)] = Room(occupant)
                 if isinstance(occupant, Teleport):
-                    self.teleports.append(self.grid[(row, col)])
+                    self.teleports.append(self.rooms[(row, col)])
         # Stage 2: Connect the rooms
-        for (row, col), room in self.grid.items():
-            room.doors.connect(row, col, self.grid)
+        for (row, col), room in self.rooms.items():
+            room.doors.connect(row, col, self.rooms)
         # Stage 3: Connect the Teleport rooms
         self.teleports.sort(key=lambda teleport: teleport.occupant.target)
         it = iter(self.teleports)
@@ -191,17 +191,17 @@ class GameBuilder:
 
     def show_room(self, row: int, col: int) -> str:
         return f"({row}, {col}) " + \
-               f"{self.grid.get((row, col), Room(Edge()))}"
+               f"{self.rooms.get((row, col), Room(Edge()))}"
 
     def __str__(self) -> str:
         return "\n".join(
             [self.show_room(row, col)
-             for (row, col) in self.grid.keys()])
+             for (row, col) in self.rooms.keys()])
 
     def show_maze(self) -> str:
         result = ""
         current_row = 0
-        for (row, col), room in self.grid.items():
+        for (row, col), room in self.rooms.items():
             if row != current_row:
                 result += "\n"
                 current_row = row
